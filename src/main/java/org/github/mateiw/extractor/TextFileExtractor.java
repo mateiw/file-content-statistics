@@ -15,14 +15,6 @@ public class TextFileExtractor implements TextExtractor {
 
     @Override
     public Supplier<Reader> newTextSupplier(Path file){
-//        StringBuilder buf = new StringBuilder();
-//        try (FileReader fr = new FileReader(file.toFile()); BufferedReader br = new BufferedReader(fr)) {
-//            String st;
-//            while ((st = br.readLine()) != null) {
-//                buf.append(st);
-//            }
-//        }
-//        return buf.toString();
         return () -> {
             try {
                 return new FileReader(file.toFile());
@@ -36,11 +28,13 @@ public class TextFileExtractor implements TextExtractor {
     @Override
     public boolean canExtract(Path file) {
         try {
-            return Files.probeContentType(file).equals("text/plain");
+            if (Files.isRegularFile(file)) {
+                return Files.probeContentType(file).equals("text/plain");
+            }
         } catch (IOException e) {
-            logger.error("Could not probe content type of file " + file, e);
-            return false;
+            logger.debug("Could not probe content type of file " + file, e);
         }
+        return false;
     }
 
 }

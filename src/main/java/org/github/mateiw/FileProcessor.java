@@ -17,11 +17,13 @@ import java.util.Optional;
 public class FileProcessor implements Runnable {
     private static final Logger logger = LogManager.getLogger(FileProcessor.class);
     private Path file;
+    private Path processedDir;
     private TextExtractorRegistry textExtractorRegistry;
     private TextAnalyzerRegistry textAnalyzerRegistry;
 
-    public FileProcessor(Path file, TextExtractorRegistry textExtractorRegistry, TextAnalyzerRegistry textAnalyzerRegistry) {
+    public FileProcessor(Path file, Path processedDir, TextExtractorRegistry textExtractorRegistry, TextAnalyzerRegistry textAnalyzerRegistry) {
         this.file = file;
+        this.processedDir = processedDir;
         this.textExtractorRegistry = textExtractorRegistry;
         this.textAnalyzerRegistry = textAnalyzerRegistry;
     }
@@ -56,6 +58,7 @@ public class FileProcessor implements Runnable {
     private void analyzeFile(Path file, Reader textReader) {
         for (var analyzer: textAnalyzerRegistry.getAnalyzers()) {
             var fileStats = analyzer.analyze(file, textReader);
+            moveFileToProcessed(file);
             // TODO extract displaying of stats to another class
             StringBuffer buf = new StringBuffer();
             buf.append("\n****** Statistics for file " + file + "\n");
@@ -64,6 +67,16 @@ public class FileProcessor implements Runnable {
             }
             buf.append("*****\n");
             logger.info(buf);
+        }
+    }
+
+    private void moveFileToProcessed(Path file) {
+        try {
+            Files.move(file, processedDir.resolve(file.getFileName() +
+                    "." + System.currentTimeMillis())); // append unix time to avoid overwriting files
+            logger.debug("Moved file " + file + " to " + processedDir.resolve(file.getFileName()));
+        } catch (IOException e) {
+            logger.error("Could not move file to processed", e);
         }
     }
 
