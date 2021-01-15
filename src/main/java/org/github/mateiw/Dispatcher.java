@@ -16,12 +16,15 @@ public class Dispatcher implements Runnable {
 
     private FileQueue queue;
     private ExecutorService workerPool;
+    private Path processedDir;
     private TextAnalyzerRegistry textAnalyzerRegistry;
     private TextExtractorRegistry textExtractorRegistry;
 
-    public Dispatcher(FileQueue queue, ExecutorService workerPool, TextAnalyzerRegistry textAnalyzerRegistry, TextExtractorRegistry textExtractorRegistry) {
+    public Dispatcher(FileQueue queue, ExecutorService workerPool, Path processedDir,
+                      TextAnalyzerRegistry textAnalyzerRegistry, TextExtractorRegistry textExtractorRegistry) {
         this.queue = queue;
         this.workerPool = workerPool;
+        this.processedDir = processedDir;
         this.textAnalyzerRegistry = textAnalyzerRegistry;
         this.textExtractorRegistry = textExtractorRegistry;
     }
@@ -31,7 +34,7 @@ public class Dispatcher implements Runnable {
         for(;;) {
             try {
                 Path filePath = queue.take();
-                FileProcessor processor = new FileProcessor(filePath, textExtractorRegistry, textAnalyzerRegistry);
+                FileProcessor processor = new FileProcessor(filePath, processedDir, textExtractorRegistry, textAnalyzerRegistry);
                 logger.debug("Dispatching file " + filePath);
                 workerPool.submit(processor);
 

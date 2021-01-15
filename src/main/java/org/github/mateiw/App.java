@@ -5,8 +5,11 @@ import org.apache.log4j.Logger;
 import org.github.mateiw.extractor.TextFileExtractor;
 import org.github.mateiw.statistics.MultiStatsAnalyzer;
 
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 
 /**
@@ -30,6 +33,12 @@ public class App {
             System.exit(2);
         }
 
+        Optional<Path> processedDir = createProcessedDir(dirPath);
+        if (processedDir.isEmpty()) {
+            logger.error("processed dir doesn't exit and could not be created");
+            System.exit(3);
+        }
+
         TextExtractorRegistry extractors = new TextExtractorRegistry();
         extractors.registerExtractor(new TextFileExtractor());
 
@@ -41,11 +50,28 @@ public class App {
 
         Dispatcher dispatcher = new Dispatcher(fileQueue,
                 Executors.newFixedThreadPool(poolSize),
+                processedDir.get(),
                 analyzers,
                 extractors
                 );
         new Thread(dispatcher, "Dispatcher-Thread").start();
         watcher.watchDirectory();
 
+    }
+
+    private static Optional<Path> createProcessedDir(Path dirPath) {
+        Path processedDir = dirPath.resolve("processed");
+        try {
+            if (Files.exists(processedDir) && !Files.isDirectory(processedDir)) {
+                Files.delete(processedDir);
+            }
+            if (Files.notExists(processedDir)) {
+                Files.createDirectory(processedDir);
+            }
+            return Optional.of(processedDir);
+        } catch (IOException e) {
+            logger.error("Could not create directory ", e);
+        }
+        return Optional.empty();
     }
 }
